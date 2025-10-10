@@ -1,0 +1,21 @@
+# ignore archive folder
+archive/
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# model checkpoints / large binaries
+*.h5
+*.ckpt
+
+# common editor / OS files
+.vscode/
+.DS_Store
+
+# local virtual envs
+env/
+venv/
