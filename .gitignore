@@ -8,6 +8,8 @@ __pycache__/
 # Jupyter checkpoints
 .ipynb_checkpoints/
 
+
+
 # model checkpoints / large binaries
 *.h5
 *.ckpt
@@ -18,4 +20,7 @@ __pycache__/
 
 # local virtual envs
 env/
-venv/
+face_det/
+*.xml
+
+understand.txt
