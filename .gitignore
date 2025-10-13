@@ -21,6 +21,9 @@ __pycache__/
 # local virtual envs
 env/
 face_det/
+emopulse_venv/
 *.xml
 
 understand.txt
+
+.env
