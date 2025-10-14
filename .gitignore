@@ -1,5 +1,6 @@
 # ignore archive folder
 archive/
+temp/
 
 # Python caches and bytecode
 __pycache__/

@@ -1,12 +1,13 @@
 import cv2
 import numpy as np
 from keras.models import load_model
+from config import MODEL_PATH, HAAR_CASCADE_PATH
 
-model=load_model('100_model_file.h5')
+model = load_model(MODEL_PATH)
 
-faceDetect=cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+faceDetect = cv2.CascadeClassifier(HAAR_CASCADE_PATH)
 
-labels_dict={0:'Angry',1:'Disgust', 2:'Fear', 3:'Happy',4:'Neutral',5:'Sad',6:'Surprise'}
+labels_dict = {0: 'Angry', 1: 'Disgust', 2: 'Fear', 3: 'Happy', 4: 'Neutral', 5: 'Sad', 6: 'Surprise'}
 
 # len(number_of_image), image_height, image_width, channel
 
