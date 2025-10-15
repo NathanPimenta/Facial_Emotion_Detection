@@ -18,13 +18,23 @@ from typing import List, Tuple, Optional, Dict, Any
 from config import MODEL_PATH, TARGET_SIZE, HAAR_CASCADE_PATH
 from emotion_mapper import RAW_CLASSES as CLASSES
 
+# Global variables
+
+frameWidth, frameHeight = -1, -1
 
 def sample_frames_from_video(video_path: str, num_samples: int) -> List[np.ndarray]:
+
     """Samples 'num_samples' frames evenly from a video file."""
+
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise RuntimeError(f"Could not open video file {video_path}")
 
+    #Get the framewidth and height
+
+    global frameWidth, frameHeight 
+
+    frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
     if frame_count <= 0:
@@ -100,6 +110,29 @@ def predict_on_frames(frames: List[np.ndarray], model: tf.keras.Model) -> Tuple[
             # Simplified for local analysis: take the largest face found in the frame
             if len(faces) > 0:
                 x, y, w, h = max(faces, key=lambda rect: rect[2] * rect[3])
+
+                #If the detected face is too small, its prolly in the background.
+                # For now we have set a threshold of 35% of total frame size.
+
+                if frameWidth > 0 and frameHeight > 0:
+                    frame_area = frameWidth * frameHeight
+                    face_area = w * h
+
+                    area_ratio = face_area / frame_area
+
+                    # Face center vs frame center
+                    face_cx, face_cy = x + w / 2, y + h / 2
+                    frame_cx, frame_cy = frameWidth / 2, frameHeight / 2
+
+                    # Normalized center offset
+                    dx = abs(face_cx - frame_cx) / frameWidth
+                    dy = abs(face_cy - frame_cy) / frameHeight
+
+                    # Filter out background, off-center, or oversized faces
+                    if area_ratio < 0.01 or area_ratio > 0.9 or dx > 0.3 or dy > 0.3:
+                        print(f"Skipped face — area={area_ratio:.3f}, dx={dx:.2f}, dy={dy:.2f}")
+                        continue
+
                 sub_face_img = gray[y:y+h, x:x+w]
                 
                 # Preprocess for model input
