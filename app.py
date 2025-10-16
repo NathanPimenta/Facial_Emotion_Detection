@@ -303,7 +303,7 @@ def main():
         """, unsafe_allow_html=True)
 
     st.title("InterviewPulse: AI-Powered Candidate Feedback")
-    st.markdown(f"**Backend API URL:** `{FLASK_BASE_URL}`", unsafe_allow_html=True)
+    # st.markdown(f"**Backend API URL:** `{FLASK_BASE_URL}`", unsafe_allow_html=True)
     st.markdown("---")
 
     # --- TAB NAVIGATION ---

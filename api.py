@@ -18,6 +18,15 @@ from emotion_mapper import RAW_CLASSES, INTERVIEW_STATUS_MAP
 
 LABELS_DICT = {i: label for i, label in enumerate(RAW_CLASSES)}
 
+#Global variables
+frameWidth, frameHeight = -1, -1
+
+annotated_frames_b64: List[str] = []
+mapped_statuses: List[str] = []
+predicted_labels: List[str] = []
+all_probabilities: List[List[float]] = []
+prediction_counts: Dict[str, int] = {}
+
 # Initialize Flask application
 app = Flask(__name__)
 emotion_model = None
@@ -101,6 +110,12 @@ def _sample_frames_from_video_file(video_path: str, num_samples: int) -> List[np
         raise RuntimeError(f"Could not open video file {video_path}")
 
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    global frameWidth, frameHeight
+
+    #Calculating frame dimensions
+    frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
     # Fallback to reading everything if frame count is not available
     if frame_count <= 0:
         frames = []
@@ -181,6 +196,15 @@ def predict_and_annotate_image():
         traceback.print_exc()
         return jsonify({"error": f"Internal prediction error. Details: {str(e)}"}), 500
 
+def no_face_detected(annotated_b64, frame) -> None:
+
+    annotated_b64 = annotate_frame(frame.copy(), None, 'No Face Detected', 'No Face Detected')
+    annotated_frames_b64.append(annotated_b64)
+    mapped_statuses.append('No Face Detected')
+    predicted_labels.append('No Face Detected')
+    all_probabilities.append([])
+    prediction_counts['No Face Detected'] = prediction_counts.get('No Face Detected', 0) + 1
+
 
 @app.route('/analyze_video', methods=['POST'])
 def analyze_video():
@@ -211,18 +235,36 @@ def analyze_video():
 
         frames = _sample_frames_from_video_file(tmp.name, num_frames)
 
-        annotated_frames_b64: List[str] = []
-        mapped_statuses: List[str] = []
-        predicted_labels: List[str] = []
-        all_probabilities: List[List[float]] = []
-        prediction_counts: Dict[str, int] = {}
-
         for frame in frames:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             faces = FACE_CASCADE.detectMultiScale(gray, 1.3, 3)
 
             if len(faces) > 0:
                 x, y, w, h = max(faces, key=lambda rect: rect[2] * rect[3])
+
+                #Logic to filter out unwanted faces based on size and position
+                global frameWidth, frameHeight
+
+                if frameWidth > 0 and frameHeight > 0:
+
+                    frame_area = frameWidth * frameHeight
+                    face_area = w * h
+
+                    area_ratio = face_area / frame_area
+
+                    # Face center vs frame center
+                    face_cx, face_cy = x + w / 2, y + h / 2
+                    frame_cx, frame_cy = frameWidth / 2, frameHeight / 2
+
+                    # Normalized center offset
+                    dx = abs(face_cx - frame_cx) / frameWidth
+                    dy = abs(face_cy - frame_cy) / frameHeight
+
+                    # Filter out background, off-center, or oversized faces
+                    if area_ratio < 0.01 or area_ratio > 0.9 or dx > 0.3 or dy > 0.3:
+                        no_face_detected(annotated_b64, frame)
+                        continue
+
                 sub_face_img = gray[y:y+h, x:x+w]
                 processed = preprocess_face_for_model(sub_face_img)
                 preds = emotion_model.predict(processed, verbose=0)
@@ -240,12 +282,7 @@ def analyze_video():
                 prediction_counts[mapped_status] = prediction_counts.get(mapped_status, 0) + 1
             else:
                 # No face detected for this frame
-                annotated_b64 = annotate_frame(frame.copy(), None, 'No Face Detected', 'No Face Detected')
-                annotated_frames_b64.append(annotated_b64)
-                mapped_statuses.append('No Face Detected')
-                predicted_labels.append('No Face Detected')
-                all_probabilities.append([])
-                prediction_counts['No Face Detected'] = prediction_counts.get('No Face Detected', 0) + 1
+                no_face_detected(annotated_b64, frame)
 
         # Ensure MAPPED status class labels are present for Streamlit plotting (order not important)
         class_labels = list(set(list(prediction_counts.keys())))
@@ -275,7 +312,7 @@ def analyze_video():
 # --- Default Route for Health Check ---
 @app.route('/', methods=['GET'])
 def root():
-    return {"Message": "Emopulse API for face detection is now live"}
+    return {"Message": "Interview-Pulse API for face detection is now live"}
 
 # --- RUN THE APP ---
 if __name__ == '__main__':
