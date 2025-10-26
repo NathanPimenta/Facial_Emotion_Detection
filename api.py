@@ -14,7 +14,7 @@ import tempfile
 import os
 
 from config import MODEL_PATH, TARGET_SIZE, HAAR_CASCADE_PATH
-from emotion_mapper import RAW_CLASSES, INTERVIEW_STATUS_MAP
+from emotion_mapper import RAW_CLASSES, INTERVIEW_STATUS_MAP, EMOTION_RATING
 
 LABELS_DICT = {i: label for i, label in enumerate(RAW_CLASSES)}
 
@@ -287,6 +287,22 @@ def analyze_video():
         # Ensure MAPPED status class labels are present for Streamlit plotting (order not important)
         class_labels = list(set(list(prediction_counts.keys())))
 
+        timeToRegainConf , confLost, timesConfLost, confLostFlag = 0, [], 0, False
+        for p in predicted_labels:
+
+            if p == 'Happy' or p=='Neutral':
+                confLost.append(timeToRegainConf)
+                timeToRegainConf = 0
+                confLostFlag = False
+            
+            else:
+                #Means the confidence is yet not regained
+                if not confLostFlag:
+
+                    confLostFlag = True
+                    timesConfLost +=1 
+    
+                timeToRegainConf += 1    
         response = {
             'status': 'success',
             'frame_count': len(frames),
@@ -295,7 +311,10 @@ def analyze_video():
             'predicted_labels': predicted_labels,
             'all_probabilities': all_probabilities,
             'prediction_counts': prediction_counts,
-            'class_labels': class_labels
+            'class_labels': class_labels,
+            'emotion_ratings': EMOTION_RATING,
+            'avg_confidence_regain_time': sum(confLost)/timesConfLost if timesConfLost > 0 else 0,
+            'times_confidence_lost': timesConfLost
         }
 
         return jsonify(response)

@@ -18,6 +18,20 @@ INTERVIEW_STATUS_MAP = {
     'Disgust': 'Negative Stress / Disconnected'
 }
 
+EMOTION_RATING={
+
+    'Neutral': 6,
+    'Happy': 7,
+    
+    'Surprise': 5,
+    'Fear': 4,
+    
+    'Sad': 3,
+    'Angry': 1,
+    'Disgust': 2,
+    'No Face Detected': 0
+}
+
 # The final list of MAPPED status names (for plotting/displaying in Streamlit)
 MAPPED_STATUS_CLASSES = list(set(INTERVIEW_STATUS_MAP.values()))
 
