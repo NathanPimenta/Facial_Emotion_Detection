@@ -113,10 +113,3 @@ Testing locally
 
 - Use `test.py` or `testdata.py` for quick experiments (they use `config.py` paths now). Those are simple scripts for webcam or single-image evaluation.
 
-Next steps I can help with
-
-- Make imports lazy so `app.py` can be imported without the ML stack installed.
-- Add a small pytest-based test suite with mocked model predictions for CI.
-- Add Dockerfile and a compose setup to run the API + Streamlit together in containers.
-
-If you'd like me to make any of those changes now, tell me which one and I'll apply the edits and run fast checks.
